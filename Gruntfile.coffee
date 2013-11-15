@@ -28,22 +28,15 @@ module.exports = (grunt) ->
         options:
           template: "test/fixtures/template"
           id_pattern: /{(.+)}/
+          tags: ['h1', 'h2', 'h3']
+          pretty: true
 
         files: [
           {
             src: ["test/fixtures/testing"]
-            dest: "/tmp/"
+            dest: "test/fixtures"
           }
         ]
-
-      custom_options:
-        options:
-          separator: ": "
-          punctuation: " !!!"
-
-        files:
-          "tmp/custom_options": ["test/fixtures/testing", "test/fixtures/123"]
-
 
     # Unit tests.
     nodeunit:

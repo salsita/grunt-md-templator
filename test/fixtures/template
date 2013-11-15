@@ -1,13 +1,18 @@
-<section id="<%= h1[0].id %>">
 
-  <%= h1[0].body %>
+<% _.forEach(children, function(section) { %>
+
+<section id="<%= section.id %>">
+
+  <%= section.body %>
 
   <icon_nav/>
 
-  <% _.forEach(h2, function(data) { %>
-    <article id="<%= data.id %>">
-      <%= data.body %>
+  <% _.forEach(section.children, function(article) { %>
+
+    <article id="<%= article.id %>">
+      <%= article.body %>
     </article><% })
   %>
-  <% _.forEach(h3, function(data) { %> <article id="<%= data.id %>"><%= data.body %></article><% }) %>
-</section>
+
+</section><%
+}) %>

@@ -45,6 +45,8 @@
     "grunt-contrib-coffee": "~0.7.0",
     "tmp": "0.0.21",
     "underscore": "~1.5.2",
-    "underscore.string": "~2.3.3"
+    "underscore.string": "~2.3.3",
+    "html": "0.0.7",
+    "js-beautify": "~1.4.2"
   }
 }

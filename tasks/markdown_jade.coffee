@@ -5,35 +5,74 @@
 # Copyright (c) 2013 Tomas Brambora
 # Licensed under the MIT license.
 #
+# So, what we'll feed into the template when we get it all parsed and whatnot
+# is something akin to:
+#
+# {
+#   "children": [
+#     {
+#       "id": "foobar",
+#       "body": "<h1>Solutions</h1>\n<p>This is the Solutions noodle.</p>",
+#       "children": [
+#         {
+#           "id": "overview",
+#           "body": "<h2>Overview</h2>\n<p>This is the overview of the Solutions noodle.</p>",
+#           "children": [],
+#           "tag": "h2"
+#         },
+#         {
+#           "id": "web-apps",
+#           "body": "<h2>Web Apps</h2>\n<p>This is my rant about Web Apps</p>,
+#           "children": [],
+#           "tag": "h2"
+#         },
+#         {
+#           "id": "mobile-apps",
+#           "body": "<h2>Mobile apps</h2>\n\n<p>Another rant</p>",
+#           "children": [],
+#           "tag": "h2"
+#         }
+#       ],
+#       "tag": "h1"
+#     }
+#   ]
+# }
+#
 
 'use strict'
 
 module.exports = (grunt) ->
-
-  # What elements we're looking for.
-  TAGS = ['h1', 'h2', 'h3', 'h4']
 
   {markdown} = require('markdown')
   _ = require 'underscore'
   _s = require 'underscore.string'
   _.mixin(_s.exports())
   path = require 'path'
+  beautifyHTML = require('js-beautify').html
 
 
+  # Global options hash.
+  _options = {}
+
+
+  # Returns -1 if tag1 is less important than tag2, 0 if they're the same
+  # and +1 if tag2 is more important.
+  # The importance is based on the `options.tags` array.
   compare = (tag1, tag2) ->
-    if _.indexOf(TAGS, tag1) > _.indexOf(TAGS, tag2)
+    if _.indexOf(_options.tags, tag1) > _.indexOf(_options.tags, tag2)
       return -1
-    if _.indexOf(TAGS, tag1) == _.indexOf(TAGS, tag2)
+    if _.indexOf(_options.tags, tag1) == _.indexOf(_options.tags, tag2)
       return 0
     return 1
 
 
-  insert = (data, root, opts) ->
+  # Inserts a DOM region into the DOM region tree.
+  insert = (data, root) ->
     tag = data[0][0]
 
+    headerId = getHeaderId data
+
     if not root.children.length
-      console.log 'no children'
-      headerId = getHeaderId data, opts
       root.children.push
         id: headerId
         body: markdown.renderJsonML _.union(['html'], data)
@@ -42,7 +81,6 @@ module.exports = (grunt) ->
       return root
 
     if compare(tag, _.last(_.pluck(root.children, 'tag'))) >= 0
-      console.log 'last child'
       root.children.push
         id: headerId
         body: markdown.renderJsonML _.union(['html'], data)
@@ -50,24 +88,27 @@ module.exports = (grunt) ->
         tag: tag
       return root
 
-    console.log 'recursing...'
-    insert(data, _.last(root.children), opts)
+    insert(data, _.last(root.children))
+
     return root
 
 
-  processFile = (f, opts) ->
+  processFile = (f) ->
     # Read'n'parse the md file.
     text = grunt.file.read f
     html = markdown.toHTMLTree markdown.parse text
 
-    # Gimme all the headers in JsonML.
+    # Find all the relevant elements (i.e., headers) in JsonML.
     elemRows = _.filter html, _.isArray
-    tagRows = _.filter elemRows, (row) -> row[0] in TAGS
-
-    data = []
+    tagRows = _.filter elemRows, (row) -> row[0] in _options.tags
 
     # Parse the JsonML tree to get the "HTML regions" that correspond to each
-    # header (basically, this splits the tree with 'h?' as separators).
+    # header. Simply put, this splits the tree using 'h?' as separators).
+    #
+    # The idea here is that each header starts a new region and we want an
+    # id for that region and the text before the next region starts. We'll
+    # feed this info into the template and get a nice HTML partial.
+    data = []
     while not _.isEmpty(tagRows)
       tagRow = tagRows.shift()
       index = _.indexOf html, tagRow
@@ -82,56 +123,43 @@ module.exports = (grunt) ->
       data.push tagTree
 
 
-    # Compile data objects per region (we'll pass those objects to the
-    # template later on).
     res = {}
     root = {children: []}
 
+    # Create the DOM region tree (we'll pass this tree to the
+    # template later on).
     for d in data
-      root = insert d, root, opts
-      console.log 'root after', root
-      console.log '========'
+      insert d, root
 
-    console.log JSON.stringify root, null, 2
-    ###
-      tag = d[0][0]
-      res[tag] or= []
+    grunt.log.debug JSON.stringify root, null, 2
 
-      headerId = getHeaderId d, opts
-
-      res.push
-        "#{tag}":
-          id: headerId
-          body: markdown.renderJsonML _.union(['html'], d)
-          parent: parent
-
-      if _.indexOf(TAGS, tag) > _.indexOf(TAGS, parent)
-        parent = tag
-    ###
-
-    return res
+    return root
 
 
   # Returns header id for a region (accessible in the template).
   # Either you can specify the id in the Markdown file or it will take the
   # heading text and slugify it.
-  getHeaderId = (data, opts) ->
+  getHeaderId = (data) ->
     text = _.last data[0]
-    match = text.match opts.id_pattern
+    match = text.match _options.id_pattern
 
     if match
       # Strip the ID pattern.
-      data[0][data[0].length - 1] = _.trim text.replace(opts.id_pattern, '')
+      data[0][data[0].length - 1] = _.trim text.replace(_options.id_pattern, '')
       headerId = match[1]
 
+    # Slugify the header text.
     headerId or= _(data[0]).chain().last().slugify().value().toLowerCase()
+
     return headerId
 
 
   grunt.registerMultiTask 'markdown_jade', 'The best Grunt plugin ever.', ->
 
-    options = this.options
+    # Default options.
+    _options = @options
       id_pattern: /{(.+)}/
+      tags: ['h1', 'h2', 'h3']
 
     _.each @files, (f) =>
 
@@ -141,13 +169,22 @@ module.exports = (grunt) ->
           return false
         return true
 
-      parsedFilesData = _.map files, (file) -> [file, processFile(file, options)]
+      # Parse the Markdown files specified in the currently processed
+      # file dict.
+      parsedFilesTuples = _.map files, (file) -> [file, processFile(file)]
 
-      _.each parsedFilesData, ([filepath, data]) ->
+      # Expand the specified template for each parsed file (with the data
+      # compiled from the md file).
+      _.each parsedFilesTuples, ([filepath, data]) ->
 
         basename = path.basename filepath, path.extname(filepath)
-        tpl = f.template or options.template
+        tpl = f.template or _options.template
 
         grunt.file.copy tpl, "#{f.dest}/#{basename}.html",
           process: (contents, path) ->
-            grunt.template.process contents, data: data
+            html = grunt.template.process contents, data: data
+            # Pretty print the html
+            if _options.pretty
+              beautifyHTML html
+            else
+              html
