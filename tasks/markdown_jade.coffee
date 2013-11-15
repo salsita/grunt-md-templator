@@ -73,9 +73,9 @@ module.exports = (grunt) ->
     tag = data[0][0]
 
     headerId = getHeaderId data
-    childTags = _.last _.pluck root.children, 'tag'
+    childTag = _.last _.pluck root.children, 'tag'
 
-    if _.isEmpty(root.children) or compareTags(tag, childTags) >= 0
+    if _.isEmpty(root.children) or compareTags(tag, childTag) >= 0
       root.children.push
         id: headerId
         body: markdown.renderJsonML _.union(['html'], data)
