@@ -1,0 +1,50 @@
+{
+  "name": "grunt-markdown-jade",
+  "description": "The best Grunt plugin ever.",
+  "version": "0.1.0",
+  "homepage": "https://github.com/realyze/grunt-markdown-jade",
+  "author": {
+    "name": "Tomas Brambora",
+    "email": "tomas@salsitasoft.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/realyze/grunt-markdown-jade.git"
+  },
+  "bugs": {
+    "url": "https://github.com/realyze/grunt-markdown-jade/issues"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/realyze/grunt-markdown-jade/blob/master/LICENSE-MIT"
+    }
+  ],
+  "main": "Gruntfile.js",
+  "engines": {
+    "node": ">= 0.8.0"
+  },
+  "scripts": {
+    "test": "grunt test"
+  },
+  "devDependencies": {
+    "grunt-contrib-jshint": "~0.6.0",
+    "grunt-contrib-clean": "~0.4.0",
+    "grunt-contrib-nodeunit": "~0.2.0",
+    "grunt": "~0.4.1"
+  },
+  "peerDependencies": {
+    "grunt": "~0.4.1"
+  },
+  "keywords": [
+    "gruntplugin"
+  ],
+  "dependencies": {
+    "markdown": "~0.5.0",
+    "grunt": "~0.4.1",
+    "grunt-contrib-coffee": "~0.7.0",
+    "tmp": "0.0.21",
+    "underscore": "~1.5.2",
+    "underscore.string": "~2.3.3"
+  }
+}
