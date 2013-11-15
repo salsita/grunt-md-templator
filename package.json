@@ -1,6 +1,6 @@
 {
   "name": "grunt-markdown-jade",
-  "description": "The best Grunt plugin ever.",
+  "description": "Generate HTML partials from Markdown.",
   "version": "0.1.0",
   "homepage": "https://github.com/realyze/grunt-markdown-jade",
   "author": {
@@ -43,10 +43,8 @@
     "markdown": "~0.5.0",
     "grunt": "~0.4.1",
     "grunt-contrib-coffee": "~0.7.0",
-    "tmp": "0.0.21",
     "underscore": "~1.5.2",
     "underscore.string": "~2.3.3",
-    "html": "0.0.7",
     "js-beautify": "~1.4.2"
   }
 }

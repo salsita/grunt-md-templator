@@ -43,11 +43,12 @@
 
 module.exports = (grunt) ->
 
-  {markdown} = require('markdown')
   _ = require 'underscore'
   _s = require 'underscore.string'
   _.mixin(_s.exports())
+
   path = require 'path'
+  {markdown} = require('markdown')
   beautifyHTML = require('js-beautify').html
 
 
@@ -58,10 +59,11 @@ module.exports = (grunt) ->
   # Returns -1 if tag1 is less important than tag2, 0 if they're the same
   # and +1 if tag2 is more important.
   # The importance is based on the `options.tags` array.
-  compare = (tag1, tag2) ->
-    if _.indexOf(_options.tags, tag1) > _.indexOf(_options.tags, tag2)
+  compareTags = (tag1, tag2) ->
+    tagIndex = _.partial _.indexOf, _options.tags
+    if tagIndex(tag1) > (tagIndex tag2)
       return -1
-    if _.indexOf(_options.tags, tag1) == _.indexOf(_options.tags, tag2)
+    if tagIndex(tag1) == (tagIndex tag2)
       return 0
     return 1
 
@@ -71,8 +73,9 @@ module.exports = (grunt) ->
     tag = data[0][0]
 
     headerId = getHeaderId data
+    childTags = _.last _.pluck root.children, 'tag'
 
-    if not root.children.length
+    if _.isEmpty(root.children) or compareTags(tag, childTags) >= 0
       root.children.push
         id: headerId
         body: markdown.renderJsonML _.union(['html'], data)
@@ -80,17 +83,7 @@ module.exports = (grunt) ->
         tag: tag
       return root
 
-    if compare(tag, _.last(_.pluck(root.children, 'tag'))) >= 0
-      root.children.push
-        id: headerId
-        body: markdown.renderJsonML _.union(['html'], data)
-        children: []
-        tag: tag
-      return root
-
-    insert(data, _.last(root.children))
-
-    return root
+    return insert(data, _.last(root.children))
 
 
   processFile = (f) ->
@@ -108,22 +101,12 @@ module.exports = (grunt) ->
     # The idea here is that each header starts a new region and we want an
     # id for that region and the text before the next region starts. We'll
     # feed this info into the template and get a nice HTML partial.
-    data = []
-    while not _.isEmpty(tagRows)
-      tagRow = tagRows.shift()
+    data = _.map tagRows, (tagRow, pos) ->
       index = _.indexOf html, tagRow
+      next = tagRows[pos + 1]
+      regionEnd = if next? then _.indexOf(html, next) else html.length
+      return html.slice index, regionEnd
 
-      if not _.isEmpty(tagRows)
-        end = _.indexOf(html, tagRows[0])
-      else
-        end = html.length
-
-      tagTree = html.slice(index, end)
-
-      data.push tagTree
-
-
-    res = {}
     root = {children: []}
 
     # Create the DOM region tree (we'll pass this tree to the
@@ -141,11 +124,12 @@ module.exports = (grunt) ->
   # heading text and slugify it.
   getHeaderId = (data) ->
     text = _.last data[0]
-    match = text.match _options.id_pattern
+    {id_pattern} = _options
+    match = text.match id_pattern
 
     if match
       # Strip the ID pattern.
-      data[0][data[0].length - 1] = _.trim text.replace(_options.id_pattern, '')
+      data[0][data[0].length - 1] = _.trim text.replace(id_pattern, '')
       headerId = match[1]
 
     # Slugify the header text.
@@ -161,9 +145,9 @@ module.exports = (grunt) ->
       id_pattern: /{(.+)}/
       tags: ['h1', 'h2', 'h3']
 
-    _.each @files, (f) =>
+    _.each @files, ({src, template, dest}) =>
 
-      files = _.filter f.src, (filepath) ->
+      files = _.filter src, (filepath) ->
         if not grunt.file.exists filepath
           grunt.log.warn "Source file #{filepath} not found."
           return false
@@ -178,13 +162,10 @@ module.exports = (grunt) ->
       _.each parsedFilesTuples, ([filepath, data]) ->
 
         basename = path.basename filepath, path.extname(filepath)
-        tpl = f.template or _options.template
+        tpl = template or _options.template
 
-        grunt.file.copy tpl, "#{f.dest}/#{basename}.html",
+        grunt.file.copy tpl, "#{dest}/#{basename}.html",
           process: (contents, path) ->
             html = grunt.template.process contents, data: data
-            # Pretty print the html
-            if _options.pretty
-              beautifyHTML html
-            else
-              html
+            # Pretty print the html.
+            return if _options.pretty then beautifyHTML(html) else html
