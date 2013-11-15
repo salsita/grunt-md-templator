@@ -24,11 +24,17 @@ module.exports = (grunt) ->
     # Configuration to be run (and then tested).
     markdown_jade:
       default_options:
+
         options:
-          wrap:
-            h2: 'article'
-        files:
-          "tmp/default_options": ["test/fixtures/testing"]
+          template: "test/fixtures/template"
+          id_pattern: /{(.+)}/
+
+        files: [
+          {
+            src: ["test/fixtures/testing"]
+            dest: "/tmp/"
+          }
+        ]
 
       custom_options:
         options:

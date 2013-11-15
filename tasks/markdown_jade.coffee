@@ -10,79 +10,144 @@
 
 module.exports = (grunt) ->
 
+  # What elements we're looking for.
+  TAGS = ['h1', 'h2', 'h3', 'h4']
+
   {markdown} = require('markdown')
   _ = require 'underscore'
   _s = require 'underscore.string'
   _.mixin(_s.exports())
+  path = require 'path'
 
-  defaults = {
-    wrap:
-      h1: 'section'
-      h2: 'article'
-  }
 
-  @options = _.extend defaults, @options
+  compare = (tag1, tag2) ->
+    if _.indexOf(TAGS, tag1) > _.indexOf(TAGS, tag2)
+      return -1
+    if _.indexOf(TAGS, tag1) == _.indexOf(TAGS, tag2)
+      return 0
+    return 1
 
-  processFile = (f) =>
+
+  insert = (data, root, opts) ->
+    tag = data[0][0]
+
+    if not root.children.length
+      console.log 'no children'
+      headerId = getHeaderId data, opts
+      root.children.push
+        id: headerId
+        body: markdown.renderJsonML _.union(['html'], data)
+        children: []
+        tag: tag
+      return root
+
+    if compare(tag, _.last(_.pluck(root.children, 'tag'))) >= 0
+      console.log 'last child'
+      root.children.push
+        id: headerId
+        body: markdown.renderJsonML _.union(['html'], data)
+        children: []
+        tag: tag
+      return root
+
+    console.log 'recursing...'
+    insert(data, _.last(root.children), opts)
+    return root
+
+
+  processFile = (f, opts) ->
+    # Read'n'parse the md file.
     text = grunt.file.read f
-    tree = markdown.parse text
+    html = markdown.toHTMLTree markdown.parse text
 
-    html = markdown.toHTMLTree tree
-    console.log html
-    console.log '-----'
+    # Gimme all the headers in JsonML.
+    elemRows = _.filter html, _.isArray
+    tagRows = _.filter elemRows, (row) -> row[0] in TAGS
 
-    tags = _.keys(@options.wrap).reverse()
+    data = []
 
-    for tag in tags
-      elemRows = _.filter html, _.isArray
-      tagRows = _.filter elemRows, (row) -> row[0] == tag
+    # Parse the JsonML tree to get the "HTML regions" that correspond to each
+    # header (basically, this splits the tree with 'h?' as separators).
+    while not _.isEmpty(tagRows)
+      tagRow = tagRows.shift()
+      index = _.indexOf html, tagRow
 
-      while not _.isEmpty(tagRows)
-        tagRow = tagRows.shift()
+      if not _.isEmpty(tagRows)
+        end = _.indexOf(html, tagRows[0])
+      else
+        end = html.length
 
-        index = _.indexOf html, tagRow
+      tagTree = html.slice(index, end)
 
-        if not _.isEmpty(tagRows)
-          end = _.indexOf(html, tagRows[0]) - index
-        else
-          end = html.length - index
-
-        console.log 'tag', index, end
-
-        tagTree = html.splice(index, end)
-
-        headerId = _(tagRow).chain()
-          .last()
-          .slugify()
-          .value()
-          .toLowerCase()
-
-        tagTree = _.union(@options.wrap[tag], {id: headerId}, tagTree)
-
-        console.log 'tree', tagTree
-
-        html.splice index, 0, tagTree
+      data.push tagTree
 
 
-    console.log html
+    # Compile data objects per region (we'll pass those objects to the
+    # template later on).
+    res = {}
+    root = {children: []}
+
+    for d in data
+      root = insert d, root, opts
+      console.log 'root after', root
+      console.log '========'
+
+    console.log JSON.stringify root, null, 2
+    ###
+      tag = d[0][0]
+      res[tag] or= []
+
+      headerId = getHeaderId d, opts
+
+      res.push
+        "#{tag}":
+          id: headerId
+          body: markdown.renderJsonML _.union(['html'], d)
+          parent: parent
+
+      if _.indexOf(TAGS, tag) > _.indexOf(TAGS, parent)
+        parent = tag
+    ###
+
+    return res
 
 
-    console.log '========='
-    console.log markdown.renderJsonML html
+  # Returns header id for a region (accessible in the template).
+  # Either you can specify the id in the Markdown file or it will take the
+  # heading text and slugify it.
+  getHeaderId = (data, opts) ->
+    text = _.last data[0]
+    match = text.match opts.id_pattern
 
-  # Please see the Grunt documentation for more information regarding task
-  # creation: http://gruntjs.com/creating-tasks
+    if match
+      # Strip the ID pattern.
+      data[0][data[0].length - 1] = _.trim text.replace(opts.id_pattern, '')
+      headerId = match[1]
+
+    headerId or= _(data[0]).chain().last().slugify().value().toLowerCase()
+    return headerId
+
 
   grunt.registerMultiTask 'markdown_jade', 'The best Grunt plugin ever.', ->
-    _.each @files, (f) ->
+
+    options = this.options
+      id_pattern: /{(.+)}/
+
+    _.each @files, (f) =>
+
       files = _.filter f.src, (filepath) ->
-        console.log filepath
         if not grunt.file.exists filepath
           grunt.log.warn "Source file #{filepath} not found."
           return false
         return true
-      console.log files
 
-      (processFile(f) for f in files)
+      parsedFilesData = _.map files, (file) -> [file, processFile(file, options)]
 
+      _.each parsedFilesData, ([filepath, data]) ->
 
+        basename = path.basename filepath, path.extname(filepath)
+        tpl = f.template or options.template
+
+        grunt.file.copy tpl, "#{f.dest}/#{basename}.html",
+          process: (contents, path) ->
+            grunt.template.process contents, data: data

@@ -1,8 +1,8 @@
-# Testing
+# Testing {foobar}
 
 this is a paragraph
 
-## 2nd level **heading**
+## 2nd level heading
 
 And yet another paragraph.
 With lines.
@@ -10,6 +10,9 @@ With lines.
  * with bullet points
  * oh yes!
  * with many bullet points!!!
+
+### 3rd level
+foobar!
 
 
 ## Another 2nd level
