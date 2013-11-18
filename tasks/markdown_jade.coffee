@@ -47,7 +47,6 @@ module.exports = (grunt) ->
   _s = require 'underscore.string'
   _.mixin(_s.exports())
 
-  path = require 'path'
   {markdown} = require('markdown')
   beautifyHTML = require('js-beautify').html
 
@@ -160,8 +159,6 @@ module.exports = (grunt) ->
       # Expand the specified template for each parsed file (with the data
       # compiled from the md file).
       _.each parsedFilesTuples, ([filepath, data]) ->
-
-        basename = path.basename filepath, path.extname(filepath)
         tpl = template or _options.template
 
         grunt.file.copy tpl, dest,
