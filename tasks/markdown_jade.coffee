@@ -164,7 +164,7 @@ module.exports = (grunt) ->
         basename = path.basename filepath, path.extname(filepath)
         tpl = template or _options.template
 
-        grunt.file.copy tpl, "#{dest}/#{basename}.html",
+        grunt.file.copy tpl, dest,
           process: (contents, path) ->
             html = grunt.template.process contents, data: data
             # Pretty print the html.
