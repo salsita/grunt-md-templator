@@ -26,15 +26,15 @@ module.exports = (grunt) ->
       default_options:
 
         options:
-          template: "test/fixtures/template"
+          template: "test/fixtures/noodle.html.tpl"
           id_pattern: /{(.+)}/
           tags: ['h1', 'h2', 'h3']
           pretty: true
 
         files: [
           {
-            src: ["test/fixtures/testing"]
-            dest: "test/fixtures"
+            src: ["test/fixtures/testing.md"]
+            dest: "/tmp/"
           }
         ]
 
