@@ -49,6 +49,8 @@ module.exports = (grunt) ->
 
   {markdown} = require('markdown')
   beautifyHTML = require('js-beautify').html
+  Entities = require('html-entities').AllHtmlEntities
+  {decode} = new Entities()
 
 
   # Global options hash.
@@ -86,6 +88,11 @@ module.exports = (grunt) ->
         body: markdown.renderJsonML(getHTML _.rest(data))
         children: []
         tag: tag
+
+      if _options.decode
+        # Make sure we decode the HTML entities.
+        for attr in ['content', 'header', 'body']
+          _.last(root.children)[attr] = decode _.last(root.children)[attr]
       return root
 
     return insert(data, _.last(root.children))

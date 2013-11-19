@@ -58,6 +58,26 @@ module.exports = (grunt) ->
           }
         ]
 
+      "decode":
+        options:
+          template: "test/fixtures/decode.html.tpl"
+          id_pattern: /{(.+)}/
+          tags: ['h1', 'h2', 'h3']
+          pretty: true
+          decode: true
+
+        files: [
+          {
+            src: ["test/fixtures/decode.md"]
+            template: "test/fixtures/decode.html.tpl"
+            dest: "tmp"
+            cwd: '.'
+            expand: true
+            ext: '.html'
+          }
+        ]
+
+
     # Unit tests.
     nodeunit:
       tests: ["test/*_test.js"]

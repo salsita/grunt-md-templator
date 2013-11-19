@@ -47,4 +47,15 @@ exports.markdown_jade = {
     test.done();
   },
 
+  "decode": function(test) {
+    test.expect(1);
+
+    var actual = grunt.file.read('tmp/test/fixtures/decode.html');
+    var expected = grunt.file.read('test/expected/decode.html');
+    test.equal(actual, expected, 'should describe what the befhavior for `decode` is.');
+
+    test.done();
+  },
+
+
 };
