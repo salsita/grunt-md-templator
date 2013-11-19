@@ -34,7 +34,10 @@ module.exports = (grunt) ->
         files: [
           {
             src: ["test/fixtures/testing.md"]
-            dest: "/tmp/"
+            dest: "tmp"
+            cwd: '.'
+            expand: true
+            ext: '.html'
           }
         ]
 

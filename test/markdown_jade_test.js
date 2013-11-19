@@ -30,7 +30,7 @@ exports.markdown_jade = {
   default_options: function(test) {
     test.expect(1);
 
-    var actual = grunt.file.read('/tmp/testing.html');
+    var actual = grunt.file.read('tmp/test/fixtures/testing.html');
     var expected = grunt.file.read('test/expected/testing.html');
     test.equal(actual, expected, 'should describe what the default behavior is.');
 
