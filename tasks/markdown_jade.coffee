@@ -75,9 +75,15 @@ module.exports = (grunt) ->
     childTag = _.last _.pluck root.children, 'tag'
 
     if _.isEmpty(root.children) or compareTags(tag, childTag) >= 0
+      # Note: The stringify/parse dance is necessary because renderJsonML is
+      # changing data object.
+      getHTML = (data) -> _.union(['html'], JSON.parse JSON.stringify data)
+
       root.children.push
         id: headerId
-        body: markdown.renderJsonML _.union(['html'], data)
+        content: markdown.renderJsonML(getHTML data)
+        header: markdown.renderJsonML(getHTML [data[0]])
+        body: markdown.renderJsonML(getHTML _.rest(data))
         children: []
         tag: tag
       return root
