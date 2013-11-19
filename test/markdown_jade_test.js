@@ -36,4 +36,15 @@ exports.markdown_jade = {
 
     test.done();
   },
+
+  "3-levels": function(test) {
+    test.expect(1);
+
+    var actual = grunt.file.read('tmp/test/fixtures/3-levels.html');
+    var expected = grunt.file.read('test/expected/3-levels.html');
+    test.equal(actual, expected, 'should describe what the befhavior for 3 levels is.');
+
+    test.done();
+  },
+
 };

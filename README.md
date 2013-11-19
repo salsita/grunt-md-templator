@@ -1,6 +1,8 @@
-# grunt-markdown-jade
+# grunt-markdown-processor
 
-> The best Grunt plugin ever.
+1) Write a markdown file with your content.
+2) Write a lo-dash template that tells the plugin what HTML you want.
+3) Let this plugin generate HTML files for you.
 
 ## Getting Started
 This plugin requires Grunt `~0.4.1`

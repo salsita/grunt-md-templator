@@ -23,17 +23,34 @@ module.exports = (grunt) ->
 
     # Configuration to be run (and then tested).
     markdown_jade:
-      default_options:
-
+      "2-levels":
         options:
-          template: "test/fixtures/noodle.html.tpl"
+          template: "test/fixtures/noodle2.html.tpl"
           id_pattern: /{(.+)}/
           tags: ['h1', 'h2', 'h3']
           pretty: true
 
         files: [
           {
-            src: ["test/fixtures/testing.md"]
+            src: ["test/fixtures/test*.md"]
+            template: "test/fixtures/noodle.html.tpl"
+            dest: "tmp"
+            cwd: '.'
+            expand: true
+            ext: '.html'
+          }
+        ]
+
+      "3-levels":
+        options:
+          template: "test/fixtures/3-levels.html.tpl"
+          id_pattern: /{(.+)}/
+          tags: ['h1', 'h2', 'h3']
+          pretty: true
+
+        files: [
+          {
+            src: ["test/fixtures/3-levels.md"]
             dest: "tmp"
             cwd: '.'
             expand: true
