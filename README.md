@@ -1,8 +1,17 @@
 # grunt-markdown-processor
 
-1) Write a markdown file with your content.
-2) Write a lo-dash template that tells the plugin what HTML you want.
-3) Let this plugin generate HTML files for you.
+1. Write a Markdown file with your content.
+2. Write a lo-dash (Grunt) template that describes the resulting HTML.
+3. Let this plugin generate the HTML files for you.
+
+### What is that good for?
+Consider you have a number of similar pages you want to author content for. And you
+prefer writing them in Markdown and/or you're not an HTML person.
+
+We got you covered.
+
+Take this plugin and let some HTML savvy gal or guy write the code for you.
+Then run it through this plugin and it will generate tasty fresh HTML for ya!
 
 ## Getting Started
 This plugin requires Grunt `~0.4.1`
