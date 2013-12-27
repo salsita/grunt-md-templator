@@ -22,7 +22,7 @@ module.exports = (grunt) ->
 
 
     # Configuration to be run (and then tested).
-    markdown_jade:
+    "md_to_html":
       "2-levels":
         options:
           template: "test/fixtures/noodle2.html.tpl"
@@ -93,7 +93,7 @@ module.exports = (grunt) ->
 
   # Whenever the "test" task is run, first clean the "tmp" dir, then run this
   # plugin's task(s), then test the result.
-  grunt.registerTask "test", ["clean", "markdown_jade", "nodeunit"]
+  grunt.registerTask "test", ["clean", "md_to_html", "nodeunit"]
 
   # By default, lint and run all tests.
   grunt.registerTask "default", ["jshint", "test"]
