@@ -1,4 +1,4 @@
-# Solutions {foobar}
+# Solutions {{"id": "foobar"}}
 
 This is the Solutions noodle.
 
