@@ -159,7 +159,7 @@ module.exports = (grunt) ->
     return metadata
 
 
-  grunt.registerMultiTask 'markdown_jade', 'Turn markdown & template into HTML.', ->
+  grunt.registerMultiTask 'md_to_html', 'Turn markdown & template into HTML.', ->
 
     # Default options.
     _options = @options
