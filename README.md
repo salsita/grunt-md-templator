@@ -73,6 +73,34 @@ Default: `false`
 
 Set to true if the resulting HTML should be pretty-printed.
 
+
+## Block support
+Version `0.2.0` comes with experimental block support.
+
+You can start a block by inserting a line like `--- blockName ---` preceded and
+followed by an empty line. Block ends when its parent section ends or when another
+block is found (see the [test/fixtures/blocks.md](test case) for an example).
+
+Blocks can be accessed via `<section>.blocks` attribute which is a hash containing data for block nodes (again, see the test for an example).
+
+
+## Accessing markdown data in the HTML template
+Each "section" has the following data:
+
+* `id` - the header id
+* `metadata` - a hash containing whatever is in `{}` at the end of the header
+  line (e.g. `## foo {{"bar": 42}}` => `section.metadata == {bar: 42}`
+* `body` - the HTML of the body of the section (please note that this *does not*
+  include the HTML of the subsections)
+* `header` - the HTML of the header of the section
+* `content` -  concatenated `header` and `body`
+* `html` - sort of like jQuery's `html()` method; HTML of all the subtree (not
+  including this section header).
+* `blocks` - a has containing child blocks data for this section
+* `children` - an array of child nodes for this section (including blocks)
+* `name` - the name of the block if section is a block, `null` otherwise
+
+
 ## Contributing
 In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [Grunt](http://gruntjs.com/).
 
