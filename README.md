@@ -79,7 +79,7 @@ Version `0.2.0` comes with experimental block support.
 
 You can start a block by inserting a line like `--- blockName ---` preceded and
 followed by an empty line. Block ends when its parent section ends or when another
-block is found (see the [test/fixtures/blocks.md](test case) for an example).
+block is found; see the [test case](test/fixtures/blocks.md?raw=true) for an example.
 
 Blocks can be accessed via `<section>.blocks` attribute which is a hash containing data for block nodes (again, see the test for an example).
 
