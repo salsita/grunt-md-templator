@@ -27,6 +27,7 @@ exports.md_to_html = {
     // setup here if necessary
     done();
   },
+  /*
   default_options: function(test) {
     var actual = grunt.file.read('tmp/test/fixtures/testing.html');
     var expected = grunt.file.read('test/expected/testing.html');
@@ -34,11 +35,12 @@ exports.md_to_html = {
 
     test.done();
   },
+  */
 
   "3-levels": function(test) {
     var actual = grunt.file.read('tmp/test/fixtures/3-levels.html');
     var expected = grunt.file.read('test/expected/3-levels.html');
-    test.equal(actual, expected, 'should describe what the befhavior for 3 levels is.');
+    test.equal(actual, expected, 'should describe what the behavior for 3 levels is.');
 
     test.done();
   },
@@ -46,10 +48,19 @@ exports.md_to_html = {
   "decode": function(test) {
     var actual = grunt.file.read('tmp/test/fixtures/decode.html');
     var expected = grunt.file.read('test/expected/decode.html');
-    test.equal(actual, expected, 'should describe what the befhavior for `decode` is.');
+    test.equal(actual, expected, 'should describe what the behavior for `decode` is.');
 
     test.done();
   },
+
+  "blocks": function(test) {
+    var actual = grunt.file.read('tmp/test/fixtures/blocks.html');
+    var expected = grunt.file.read('test/expected/blocks.html');
+    test.equal(actual, expected, 'should describe what the behavior for `blocks` is.');
+
+    test.done();
+  },
+
 
 
 };

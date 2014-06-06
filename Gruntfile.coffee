@@ -23,23 +23,6 @@ module.exports = (grunt) ->
 
     # Configuration to be run (and then tested).
     md_to_html:
-      "2-levels":
-        options:
-          template: "test/fixtures/noodle2.html.tpl"
-          metadata_pattern: /{(.+)}/
-          tags: ['h1', 'h2', 'h3']
-          pretty: true
-
-        files: [
-          {
-            src: ["test/fixtures/test*.md"]
-            template: "test/fixtures/noodle.html.tpl"
-            dest: "tmp"
-            cwd: '.'
-            expand: true
-            ext: '.html'
-          }
-        ]
 
       "3-levels":
         options:
@@ -93,6 +76,24 @@ module.exports = (grunt) ->
             ext: ".html"
           }
         ]
+
+      "blocks":
+        options:
+          metadata_pattern: /{(.+)}/
+          tags: ['h1', 'h2', 'h3']
+          pretty: true
+
+        files: [
+          {
+            src: ["test/fixtures/blocks.md"]
+            template: "test/fixtures/blocks.html.tpl"
+            dest: "tmp"
+            cwd: '.'
+            expand: true
+            ext: '.html'
+          }
+        ]
+
 
 
 

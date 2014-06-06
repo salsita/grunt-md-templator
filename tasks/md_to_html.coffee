@@ -5,39 +5,6 @@
 # Copyright (c) 2013 Tomas Brambora
 # Licensed under the MIT license.
 #
-# So, what we'll feed into the template when we get it all parsed and whatnot
-# is something akin to:
-#
-# {
-#   "children": [
-#     {
-#       "id": "foobar",
-#       "body": "<h1>Solutions</h1>\n<p>This is the Solutions noodle.</p>",
-#       "children": [
-#         {
-#           "id": "overview",
-#           "body": "<h2>Overview</h2>\n<p>This is the overview of the Solutions noodle.</p>",
-#           "children": [],
-#           "tag": "h2"
-#         },
-#         {
-#           "id": "web-apps",
-#           "body": "<h2>Web Apps</h2>\n<p>This is my rant about Web Apps</p>,
-#           "children": [],
-#           "tag": "h2"
-#         },
-#         {
-#           "id": "mobile-apps",
-#           "body": "<h2>Mobile apps</h2>\n\n<p>Another rant</p>",
-#           "children": [],
-#           "tag": "h2"
-#         }
-#       ],
-#       "tag": "h1"
-#     }
-#   ]
-# }
-#
 
 'use strict'
 
@@ -70,12 +37,33 @@ module.exports = (grunt) ->
       return 0
     return 1
 
+  isBlockTag = (tag) -> tag.indexOf('block') == 0
+
+  getBlockName = (data) -> data[0][1].replace(/---\s*([^-\s]+)\s*---/, '$1')
 
   # Inserts a DOM region into the DOM region tree.
   insert = (data, root) ->
     tag = data[0][0]
-
     childTag = _.last _.pluck root.children, 'tag'
+
+    # Handle blocks. Every block "inherits" heading level from 
+    # its parent header. Block ends when we either find a new block
+    # tag or when the parent heading section ends.
+    if isBlockTag(tag)
+      if not root.tag?
+        # It's the very first level of the tree, so just recurse in.
+        return insert(data, _.last(root.children))
+
+      if childTag? and isBlockTag(childTag)
+        # Current tag is a block and the last delimiter was a block =>
+        # end the previous block and start a new sibling block (with the
+        # same heading level).
+        tag = data[0][0] = childTag
+
+      if _.isEmpty(root.children)
+        # We've just found a new block without predecesors => start
+        # a new block with parent heading level.
+        tag = data[0][0] = "block-#{root.tag}"
 
     if _.isEmpty(root.children) or compareTags(tag, childTag) >= 0
       # Note: The stringify/parse dance is necessary because renderJsonML is
@@ -92,6 +80,8 @@ module.exports = (grunt) ->
         body: markdown.renderJsonML(getHTML _.rest(data))
         children: []
         tag: tag
+        isBlock: isBlockTag(tag)
+        name: if isBlockTag(tag) then getBlockName(data) else null
 
       if _options.decode
         # Make sure we decode the HTML entities.
@@ -107,9 +97,36 @@ module.exports = (grunt) ->
     text = grunt.file.read f
     html = markdown.toHTMLTree markdown.parse text
 
+    findDelimiter = (row) ->
+      row[0] in _options.tags or (typeof(row[1]) is 'string' and row[1].match(/^---[^-]+---$/))
+
+
     # Find all the relevant elements (i.e., headers) in JsonML.
     elemRows = _.filter html, _.isArray
-    tagRows = _.filter elemRows, (row) -> row[0] in _options.tags
+    tagRows = _.filter elemRows, findDelimiter
+
+    tagRows = _.map tagRows, (row) ->
+      if typeof(row[1]) is 'string' and row[1].match(/^---[^-]+---$/)
+        row[0] = 'block'
+      return row
+    
+    blockTags = ("block-#{tag}" for tag in _options.tags)
+    # ## Trick:
+    # For every tag that creates scope, create it's block element child and
+    # give one less priority level.
+    # We use this to compare tag priorities (so that a block nested withing
+    # an e.g. `h2` scope will have lower priority than `h2` but bigger than `h3`).
+    _options.tags = _.flatten _.zip _options.tags, blockTags
+
+    # ## Trick:
+    # Add level-yet-to-be-determined block to the end of _options.tags (i.e., give
+    # it the least priority).
+    # That way it will always have a lower priority than any non-block tag we
+    # find and hence will become it's child.
+    _options.tags.push 'block'
+
+    grunt.log.debug 'tagRows', tagRows
+    grunt.log.debug '_options.tags', _options.tags
 
     # Parse the JsonML tree to get the "HTML regions" that correspond to each
     # header. Simply put, this splits the tree using 'h?' as separators).
@@ -130,8 +147,43 @@ module.exports = (grunt) ->
     for d in data
       insert d, root
 
+    root = findChildBlocks(root)
+    root = findHTMLSubtrees(root)
+
     grunt.log.debug JSON.stringify root, null, 2
 
+    return root
+
+
+  # DFS the tree and assign a `blocks` hash property to each node. The property
+  # contains child nodes which are blocks. This is mainly for convenience so
+  # that users can access the block by `node.blocks.<myBlockName>` shortcut.
+  findChildBlocks = (root) ->
+    root.blocks = {}
+    for child in root.children
+      findChildBlocks(child)
+      if child.isBlock
+        root.blocks[child.name] = child
+    return root
+
+
+  # DFS the tree and assign `html` property to each node. The property contains
+  # the HTML content of the subtree (kind of like jQuery's `html()` method).
+  findHTMLSubtrees = (root) ->
+    for child in root.children
+      findHTMLSubtrees(child)
+
+    if root.children.length > 0
+      childHTML = _.pluck(root.children, 'html').join('')
+    else
+      childHTML = ""
+    
+    if root.isBlock
+      root.html = (root.body or '') + childHTML
+    else
+      root.html = (root.content or '') + childHTML
+
+    root.html = _.trim(root.html)
     return root
 
 
@@ -145,8 +197,6 @@ module.exports = (grunt) ->
 
     metadata = {}
 
-    grunt.log.debug 'match', text, match
-
     if match
       # Strip the metadata pattern.
       data[0][data[0].length - 1] = _.trim text.replace(metadata_pattern, '')
@@ -154,7 +204,7 @@ module.exports = (grunt) ->
 
     metadata.id or= _(data[0]).chain().last().slugify().value().toLowerCase()
 
-    grunt.log.debug 'meatadata', metadata
+    grunt.log.debug 'metadata', metadata
 
     return metadata
 
