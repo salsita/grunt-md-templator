@@ -94,7 +94,7 @@ Each "section" has the following data:
   include the HTML of the subsections)
 * `header` - the HTML of the header of the section
 * `content` -  concatenated `header` and `body`
-* `html` - sort of like jQuery's `html()` method; HTML of all the subtree (not
+* `html` - sort of like jQuery's `html()` method; HTMLof the whole subtree (not
   including this section header).
 * `blocks` - a has containing child blocks data for this section
 * `children` - an array of child nodes for this section (including blocks)
