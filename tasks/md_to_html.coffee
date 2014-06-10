@@ -1,6 +1,6 @@
 #
-# grunt-markdown-jade
-# https://github.com/realyze/grunt-markdown-jade
+# grunt-md-templator
+# https://github.com/realyze/grunt-md-templator
 #
 # Copyright (c) 2013 Tomas Brambora
 # Licensed under the MIT license.
