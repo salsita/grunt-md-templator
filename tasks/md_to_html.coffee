@@ -18,7 +18,7 @@ module.exports = (grunt) ->
   beautifyHTML = require('js-beautify').html
   Entities = require('html-entities').AllHtmlEntities
   {decode} = new Entities()
-  path = require 'path'
+  fspath = require 'path'
   mkdirp = require 'mkdirp'
 
 
@@ -82,6 +82,8 @@ module.exports = (grunt) ->
         tag: tag
         isBlock: isBlockTag(tag)
         name: if isBlockTag(tag) then getBlockName(data) else null
+        html: null # Filled later on.
+        blocks: {} # Filled later on.
 
       if _options.decode
         # Make sure we decode the HTML entities.
@@ -179,6 +181,8 @@ module.exports = (grunt) ->
       childHTML = ""
     
     if root.isBlock
+      # We're adding `body` for blocks because we don't want to include 
+      # the block element itself (which would happen if we included `content`).
       root.html = (root.body or '') + childHTML
     else
       root.html = (root.content or '') + childHTML
@@ -258,37 +262,52 @@ module.exports = (grunt) ->
     res.push _.rest(pathToRoot)
 
 
+  # Creates multiple HTML files from `data`, each HTML file will be based on
+  # template `tpl`, wil be stored in `dest` directory (plus the path determined
+  # by the ids on the path to the section in the markdown document) and will
+  # have `ext` extension.
   splitIntoMultipleFiles = (data, tpl, dest, ext) ->
+    # Leaves is an array of arrays (paths from leaf to root in the markdown
+    # document).
     leaves = []
+
     getDataLeaves data, [], leaves
 
-    tmp = []
+    # We have e.g. `clients/overview` and `clients/foo/bar` now but we want
+    # `clients` and `clients/foo` too.
+    leavesIncludingBlocks = _.union leaves, (_.initial(p) for p in leaves)
 
-    # Add the non-leaf paths to the mix as well (so that we have links to
-    # e.g. foo/bar, i.e., the "section overview page").
-    leaves = _.union leaves, (_.initial(p) for p in leaves)
+    # There's a lot of duplicates now, let's remove them to speed things up.
+    leavesIncludingBlocks = _.uniq leavesIncludingBlocks, (leafPath) ->
+      _.pluck(leafPath, 'id').join ' '
 
-    for leavePath in leaves when leavePath.length > 0
-      parts = _.union([dest], _.pluck(leavePath, 'id'))
-      leaveDest = path.join.apply @, parts
-      leaveDest = "#{leaveDest}#{ext}"
+    # Blocks are supposed to be invisible. So lets remove them (otherwise we would
+    # get paths with ids like `-- front --` and `-- back --`).
+    leaves = _.map leavesIncludingBlocks, (path) ->
+      return _.reject path, (node) -> node.isBlock
 
-      grunt.log.debug 'mkdirp', path.dirname(leaveDest)
-      grunt.log.debug 'section',_.pluck(leavePath, 'id'), _.last(leavePath)
+    # We might have gotten some empty paths, let's get rid of those.
+    nonEmptyLeaves = _.filter leaves, (path) -> path.length > 0
 
-      if not _.last(leavePath).body
-        grunt.log.debug "skipping ", _.pluck(leavePath, 'id'), ": no body"
-        continue
+    nodesPaths = _.map nonEmptyLeaves, (leafPath) ->
+      # `parts` will be the path to the new HTML page produced from the
+      # markdown section.
+      parts = _.union([dest], _.pluck(leafPath, 'id'))
+      leafDest = fspath.join.apply @, parts
+      leafDest = "#{leafDest}#{ext}"
+      return [leafPath, leafDest]
 
-      mkdirp.sync path.dirname(leaveDest)
+    for [nodes, path] in nodesPaths
+      mkdirp.sync fspath.dirname(path)
 
-      grunt.file.copy tpl, leaveDest,
+      # Let's create the actual HTML file now.
+      grunt.file.copy tpl, path,
         process: (contents, path) ->
           html = grunt.template.process contents, data: _.extend({
-              section: _.last(leavePath)
-              ids: _.pluck(leavePath, 'id')
+              section: _.last(nodes)
+              ids: _.pluck(nodes, 'id')
               all: data
-              root: leavePath[0]
+              root: nodes[0]
             }, _options.data)
           # Pretty print the html.
           return if _options.pretty then beautifyHTML(html) else html
